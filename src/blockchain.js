@@ -143,7 +143,7 @@
              try {
                 //Verify  the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
                 isVerified = bitcoinMessage.verify(message, address, signature) ;
-                console.log(isVerified);   
+                console.log("isVerified? ", isVerified);   
              } catch (error) {               
                 Error(error);
              }
@@ -160,10 +160,18 @@
              console.log('submitStar verification: ' + isVerified + ' adding block');
              await this._addBlock(block);
              //execute the validateChain() function every time a block is added
-             var blockchain_valide_boo = this.validateChain();
-             console.log('Validation de la blockchain après ajout étoile: ' + blockchain_valide_boo );
-             //Resolve with the block added.
-             resolve(block);
+             var blockchain_valide_boo = await this.validateChain();
+             console.log(blockchain_valide_boo);
+             if(blockchain_valide_boo == true){
+                console.log(`La blockchain est valide: ${blockchain_valide_boo}`);
+                //Resolve with the block added.
+                resolve(block);
+             }else{
+                console.log(`La blockchain n'est pas valide: ${blockchain_valide_boo}`);
+                reject(block);
+             }
+             
+             
          });   
      }
  
@@ -273,7 +281,8 @@
             if(ChainIsValid == true){
                 resolve(true);
             }else{
-                resolve(errorLog);
+                reject(errorLog);
+                //resolve(errorLog); (Im not sure wich one is the right one... Both work fine)
             }
             
          });
