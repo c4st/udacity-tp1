@@ -26,7 +26,7 @@
          this.chain = [];
          this.height = -1;
          this.initializeChain();
-         console.log("We are going to verify the chain!");
+         console.log("We are going to verify the initial chain!");
          this.validateChain();
      }
  
@@ -66,23 +66,29 @@
      _addBlock(block) {
          let self = this;
          return new Promise(async (resolve, reject) => {
-             // set height
-             block.height = self.height + 1;
-             // set timestamp
-             block.time = new Date().getTime().toString().slice(0,-3);
-             if(self.height == -1) { // special genesis block case
-                 block.previousBlockHash = null;
-             } else {
-                 // set previous block hash
-                 block.previousBlockHash = self.chain[self.chain.length-1].hash;
-             }
-             // set current block hash
-             block.hash = SHA256(JSON.stringify(block)).toString();
-             // push block on to blockchain
-             self.chain.push(block);
-             // update blockchain height
-             this.height += 1;
-             resolve(block);
+            try {
+                // set height
+                block.height = self.height + 1;
+                // set timestamp
+                block.time = new Date().getTime().toString().slice(0,-3);
+                if(self.height == -1) { // special genesis block case
+                    block.previousBlockHash = null;
+                } else {
+                    // set previous block hash
+                    block.previousBlockHash = self.chain[self.chain.length-1].hash;
+                }
+                // set current block hash
+                block.hash = SHA256(JSON.stringify(block)).toString();
+                // push block on to blockchain
+                self.chain.push(block);
+                // update blockchain height
+                this.height += 1;
+                resolve(block);
+            } catch (error) {               
+                Error(error);
+            }     
+            
+            
          });
         
      }
@@ -128,8 +134,10 @@
          return new Promise(async (resolve, reject) => {
              let messageTime = parseInt(message.split(':')[1]);//Get the time from the message sent as a parameter 
              let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));//Get the current time: `let currentTime
+             let flagTimeElapsed = false;
              if((currentTime - messageTime) > 300){ //Check if the time elapsed is less than 5 minutes
-                 reject(new Error('submitStar: more than five minutes have elapsed'))
+                flagTimeElapsed = true; 
+                reject("submitStar: more than five minutes have elapsed");
              }
              var isVerified = false;
              try {
@@ -137,21 +145,23 @@
                 isVerified = bitcoinMessage.verify(message, address, signature) ;
                 console.log(isVerified);   
              } catch (error) {               
-                console.log("There was an error  verifiying your address");
-                 Error(error);
+                Error(error);
              }
              
              //Create the block and add it to the chain
              let data = {address: address, message: message, signature: signature, star: star};
              let block = new BlockClass.Block(data);
              
-             if(!isVerified) {
-                 console.log('submitStar verification: ' + isVerified + ' rejecting block');
+             if(!isVerified || flagTimeElapsed == true) {
+                 console.log('submitStar verification: ' + isVerified + ' time elapsed? ' + flagTimeElapsed);
                  reject(block);                 
                  return;
              }
              console.log('submitStar verification: ' + isVerified + ' adding block');
              await this._addBlock(block);
+             //execute the validateChain() function every time a block is added
+             var blockchain_valide_boo = this.validateChain();
+             console.log('Validation de la blockchain après ajout étoile: ' + blockchain_valide_boo );
              //Resolve with the block added.
              resolve(block);
          });   
@@ -239,11 +249,11 @@
                 //You should validate each block using `validateBlock`
                 //console.log("Resultat du validate: " , block.validate());
                 var BlockIsValid = block.validate();
-                if(BlockIsValid != false){
-                    errorLog.push("<br><hr>Il n'y a pas d'erreurs pour le bloc " + block.height + " avec le hash # " + block.hash);                    
+                if(BlockIsValid == false){
+                    errorLog.push("<br><hr>Il y a une erreur sur le block " + block.height); 
+                    ChainIsValid = false;                                      
                 }/*else{
-                    errorLog.push("<br><hr>Il y a une erreur sur le block " + block.height);
-                    ChainIsValid = false;
+                     errorLog.push("<br><hr>Il n'y a pas d'erreurs pour le bloc " + block.height + " avec le hash # " + block.hash);                  
                 }*/
                 
                 //Each Block should check the with the previousBlockHash
@@ -253,7 +263,7 @@
                 }else if(block.previousBlockHash == previous_Block_Hash){
                     //errorLog.push("<br>Previous block hash is: " + previous_Block_Hash + " block.previoushash= " + block.previousBlockHash);
                 }else{
-                    errorLog.push("<br>Les hash ne coresspondent pas, la chain est brisé, previous bloc hash: " + previous_Block_Hash + "  présent hash = " + block.previousBlockHash );
+                    errorLog.push("<br>Les hash ne coresspondent pas, la chaine est brisé, previous bloc hash: " + previous_Block_Hash + "  présent hash = " + block.previousBlockHash );
                     ChainIsValid = false;
                 }
                 

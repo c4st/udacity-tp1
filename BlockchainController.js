@@ -108,12 +108,12 @@ class BlockchainController {
            let validateBlockchain = await this.blockchain.validateChain(); 
            
            //console.log(validateshit);
-           html += "<p>Resultats du validatechain</p>" ;
+           html += "<p>Results from validateChain()</p>" ;
 
            if(validateBlockchain == true){
-            html += "La blockchain est valide!!";
+            html += "The blockchain is valid";
            }else{
-            html += "Il y a un probleme dans la blockchain.. :(";
+            html += "There was a problem validating the blockchain.. :(";
            }
           
 
