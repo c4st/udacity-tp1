@@ -147,7 +147,7 @@ You can check in your terminal the the Express application is listening in the P
      * 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
      * 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
      * 3. Check if the time elapsed is less than 5 minutes
-     * 4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
+     * 4. Verify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
      * 5. Create the block and add it to the chain
      * 6. Resolve with the block added.
      * @param {*} address 
@@ -156,7 +156,7 @@ You can check in your terminal the the Express application is listening in the P
      * @param {*} star 
      */
 6. `blockchain.js` file. In the `Blockchain` class we are going to implement the method:
-    `getBlockByHash(hash)`
+    `getBlockByHash(hash)`*Mistake, its getBlockByHash(height)
     /**
      * This method will return a Promise that will resolve with the Block
      *  with the hash passed as a parameter.
