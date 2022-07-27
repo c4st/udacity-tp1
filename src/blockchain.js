@@ -211,29 +211,40 @@
          });
      }
  
-     /**
-      * This method will return a Promise that will resolve with an array of Stars objects existing in the chain 
-      * and are belongs to the owner with the wallet address passed as parameter.
-      * Remember the star should be returned decoded.
-      * @param {*} address 
-      */
-        getStarsByWalletAddress(address) {
-            let self = this;
-            let results = [];
-            return new Promise((resolve, reject) => {            
+    /**
+     * This method will return a Promise that will resolve with an array of Stars objects existing in the chain 
+     * and are belongs to the owner with the wallet address passed as parameter.
+     * Remember the star should be returned decoded.
+     * @param {*} address 
+     */
+     getStarsByWalletAddress (address) {
+        let self = this;
+        let stars = [];
+        let currentBlockUncripted = []; //We are going to need this as a tampon when we go trought the blockchain
+        return new Promise((resolve, reject) => {
+
+                    //Go trought blockchain to find matching wallet adress, and get star information
+                    self.chain.forEach(async(block) => { //This needs to be async because we will need time to get all block infos
+                        //find out if the block matches the requested wallet adrress
+                        //Get block infos uncripted to get wallet# related to this block
+                        currentBlockUncripted =   await block.getBData();  //await neccessary to give the time to the app to complete the getBData request               
+                        console.log(currentBlockUncripted);
+                        //Skip genesis block
+                        if(block.height == 0){
+                            console.log('Genesis block NVM');
+                        }else if(currentBlockUncripted.address === address ){//if wallet adress match request
+                            stars.push(currentBlockUncripted);
+                        }else {
+                            console.log('wallet adress dosent match');
+                        }
+                        currentBlockUncripted = []; //Clear clock data
+                                       
+
+                }); 
+                resolve(stars);  // Display block info          
                 
-                // Method derived from: https://knowledge.udacity.com/questions/282668
-                self.chain.forEach(async(b) => {
-
-                        let blockData = await b.getBData();
-                        if (blockData.address === address) results.push(blockData);
-
-                });         
-                resolve(results);
-
-            });
-
-        }
+        });
+    }
  
      /**
       * This method will return a Promise that will resolve with the list of errors when validating the chain.
