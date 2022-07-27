@@ -113,67 +113,81 @@
      }
  
      /**
-      * The submitStar(address, message, signature, star) method
-      * will allow users to register a new Block with the star object
-      * into the chain. This method will resolve with the Block added or
-      * reject with an error.
-      * Algorithm steps:
-      * 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
-      * 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
-      * 3. Check if the time elapsed is less than 5 minutes
-      * 4. Verify  the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
-      * 5. Create the block and add it to the chain
-      * 6. Resolve with the block added.
-      * @param {*} address 
-      * @param {*} message 
-      * @param {*} signature 
-      * @param {*} star 
-      */
-     submitStar(address, message, signature, star) {
-         let self = this;
-         return new Promise(async (resolve, reject) => {
-             let messageTime = parseInt(message.split(':')[1]);//Get the time from the message sent as a parameter 
-             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));//Get the current time: `let currentTime
-             let flagTimeElapsed = false;
-             if((currentTime - messageTime) > 300){ //Check if the time elapsed is less than 5 minutes
-                flagTimeElapsed = true; 
-                reject("submitStar: more than five minutes have elapsed");
-             }
-             var isVerified = false;
-             try {
-                //Verify  the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
-                isVerified = bitcoinMessage.verify(message, address, signature) ;
-                console.log("isVerified? ", isVerified);   
-             } catch (error) {               
-                Error(error);
-             }
-             
-             //Create the block and add it to the chain
-             let data = {address: address, message: message, signature: signature, star: star};
-             let block = new BlockClass.Block(data);
-             
-             if(!isVerified || flagTimeElapsed == true) {
-                 console.log('submitStar verification: ' + isVerified + ' time elapsed? ' + flagTimeElapsed);
-                 reject(block);                 
-                 return;
-             }
-             console.log('submitStar verification: ' + isVerified + ' adding block');
-             await this._addBlock(block);
-             //execute the validateChain() function every time a block is added
-             var blockchain_valide_boo = await this.validateChain();
-             console.log(blockchain_valide_boo);
-             if(blockchain_valide_boo == true){
-                console.log(`La blockchain est valide: ${blockchain_valide_boo}`);
-                //Resolve with the block added.
-                resolve(block);
-             }else{
-                console.log(`La blockchain n'est pas valide: ${blockchain_valide_boo}`);
-                reject(block);
-             }
-             
-             
-         });   
-     }
+     * The submitStar(address, message, signature, star) method
+     * will allow users to register a new Block with the star object
+     * into the chain. This method will resolve with the Block added or
+     * reject with an error.
+     * Algorithm steps:
+     * 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
+     * 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
+     * 3. Check if the time elapsed is less than 5 minutes
+     * 4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
+     * 5. Create the block and add it to the chain
+     * 6. Resolve with the block added.
+     * @param {*} address 
+     * @param {*} message 
+     * @param {*} signature 
+     * @param {*} star 
+     */
+      submitStar(address, message, signature, star) {
+        let self = this;
+        
+        return new Promise(async (resolve, reject) => {
+            // 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
+            let timeOfSubmission = parseInt(message.split(':')[1]);
+            // 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
+            let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+            // 3. Check if the time elapsed is less than 5 minutes
+            var delaie = currentTime - timeOfSubmission;
+            console.log("Delais = ", delaie);
+            var BooMessageVerified = false; //We going to need this to detect if message is verified
+            if( delaie < 300 ){
+                console.log("Request within 5 minutes");
+                // 4. Verify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
+                try {
+                    BooMessageVerified = bitcoinMessage.verify(message, address, signature) ;
+                 } catch (error) {               
+                    Error(error);
+                 }     
+                
+                // 5. If the message is verified: Create the block and add it to the chain or advise there was a problem verifying message
+                if(BooMessageVerified == true){
+                    //Create the block
+                    console.log("Message verified!: ", BooMessageVerified );
+                    let blockData = {address: address, message: message, signature: signature, star: star};
+                    let blockToPush = new BlockClass.Block(blockData);
+                    
+                    // 6. Resolve with the block added.
+                    try {
+                        await this._addBlock(blockToPush); //await to make sure to operation is complete
+
+                        //execute the validateChain() function every time a block is added
+                        var blockchain_valide_boo = await this.validateChain();
+                        console.log(blockchain_valide_boo);
+                        if(blockchain_valide_boo == true){
+                            console.log(`La blockchain est valide: ${blockchain_valide_boo}`);
+                            //Resolve with the block added.
+                            resolve(blockToPush);
+                        }else{
+                            console.log(`La blockchain n'est pas valide: ${blockchain_valide_boo}`);
+                            reject(blockToPush);
+                        }                       
+                     } catch (error) {               
+                        Error(error);
+                     }                 
+                    
+                }else{
+                    console.log("Message not verified :( : ", BooMessageVerified );
+                    reject("There was a error verifiyng your message.");
+                    
+                }
+            }else{
+                reject("The 5 minute delay has been reached");
+                
+            }           
+
+        });
+    }
  
      /**
       * This method will return a Promise that will resolve with the Block
